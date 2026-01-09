@@ -59,12 +59,19 @@ x-common: &common
     - ash-vault
   restart: unless-stopped
 
+### Common Environmental Variables ###
+x-env: &env
+  PGID: 1001
+  PUID: 1001
+  TZ: America/Los_Angeles
+
 ### Healthchecks ###
 x-health: &health
   interval: 30s
   timeout: 10s
   retries: 3
-  start_period: 30s
+  start_period: 120s
+  start_interval: 10s
 
 services:
   # ===========================================================================
@@ -98,7 +105,13 @@ services:
 
     healthcheck:
       <<: *health
-      test: ["CMD", "curl", "-f", "http://localhost:${MINIO_API_PORT:-30884}/minio/health/live"]
+      test:
+        [
+          "CMD",
+          "curl",
+          "-f",
+          "http://localhost:${MINIO_API_PORT:-30884}/minio/health/live",
+        ]
       start_period: 10s
 
     logging:
@@ -159,7 +172,8 @@ services:
 
     healthcheck:
       <<: *health
-      test: ["CMD", "curl", "-f", "http://localhost:${VAULT_PORT:-30886}/health"]
+      test:
+        ["CMD", "curl", "-f", "http://localhost:${VAULT_PORT:-30886}/health"]
 
     logging:
       driver: "json-file"
