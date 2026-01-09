@@ -13,7 +13,7 @@ MISSION - NEVER TO BE VIOLATED:
 ============================================================================
 Snapshot Job - ZFS Snapshot Management
 ----------------------------------------------------------------------------
-FILE VERSION: v5.0-3-3.5-1
+FILE VERSION: v5.0-3-3.5a-1
 LAST MODIFIED: 2026-01-09
 PHASE: Phase 3 - Backup Infrastructure
 CLEAN ARCHITECTURE: Compliant
@@ -24,11 +24,11 @@ Repository: https://github.com/the-alphabet-cartel/ash-vault
 import subprocess
 import time
 from datetime import datetime
-from typing import List, Optional
+from typing import List, Tuple
 
 from src.managers.alert_manager import create_alert_manager
 
-__version__ = "v5.0-3-3.5-1"
+__version__ = "v5.0-3-3.5a-1"
 
 
 class SnapshotJob:
@@ -61,7 +61,7 @@ class SnapshotJob:
             "monthly": retention_config.get("monthly_count", 12)
         }
     
-    def _run_command(self, command: List[str]) -> tuple[bool, str]:
+    def _run_command(self, command: List[str]) -> Tuple[bool, str]:
         """
         Run a shell command and return result.
         

@@ -13,7 +13,7 @@ MISSION - NEVER TO BE VIOLATED:
 ============================================================================
 Replication Job - ZFS Replication to Lofn
 ----------------------------------------------------------------------------
-FILE VERSION: v5.0-3-3.5-1
+FILE VERSION: v5.0-3-3.5a-1
 LAST MODIFIED: 2026-01-09
 PHASE: Phase 3 - Backup Infrastructure
 CLEAN ARCHITECTURE: Compliant
@@ -27,7 +27,7 @@ from typing import List, Optional, Tuple
 
 from src.managers.alert_manager import create_alert_manager
 
-__version__ = "v5.0-3-3.5-1"
+__version__ = "v5.0-3-3.5a-1"
 
 
 class ReplicationJob:
@@ -57,7 +57,7 @@ class ReplicationJob:
         replication_config = config_manager.get_section("replication")
         self.lofn_host = replication_config.get("lofn_host", "10.20.30.253")
         self.lofn_dataset = replication_config.get("lofn_dataset", "backup/ash-vault")
-        self.ssh_key = replication_config.get("ssh_key", "/root/.ssh/id_ed25519_lofn")
+        self.ssh_key = replication_config.get("ssh_key_path", "/root/.ssh/id_ed25519_lofn")
     
     def _run_command(self, command: List[str], timeout: int = 3600) -> Tuple[bool, str]:
         """

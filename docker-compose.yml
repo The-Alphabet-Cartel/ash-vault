@@ -12,9 +12,9 @@
 # ============================================================================
 # Docker Compose Configuration - Backup Service
 # ----------------------------------------------------------------------------
-# FILE VERSION: v5.0-1-1.0-1
+# FILE VERSION: v5.0-3-3.5a-1
 # LAST MODIFIED: 2026-01-09
-# PHASE: Phase 1 - Foundation
+# PHASE: Phase 3 - Backup Infrastructure
 # CLEAN ARCHITECTURE: Compliant
 # Repository: https://github.com/the-alphabet-cartel/ash-vault
 # ============================================================================
@@ -39,8 +39,6 @@
 # SECRETS:
 #   Secrets are stored in ./secrets/ directory:
 #   - ./secrets/discord_alert_token - Discord webhook for alerts (optional)
-#   - ./secrets/b2_key_id          - Backblaze B2 key ID
-#   - ./secrets/b2_application_key - Backblaze B2 application key
 #
 # REQUIREMENTS:
 #   - Docker Engine 24.0+
@@ -55,8 +53,6 @@ x-common: &common
 ### Common Environmental Variables ###
 x-env: &env
   TZ: America/Los_Angeles
-  PGID: 1001
-  PUID: 1001
 
 ### Healthchecks ###
 x-health: &health
@@ -78,6 +74,9 @@ services:
       dockerfile: Dockerfile
     <<: *common
 
+    # Required for ZFS operations
+    privileged: true
+
     # Resource limits (production)
     deploy:
       resources:
@@ -88,8 +87,17 @@ services:
     # Environment variables
     environment:
       <<: *env
-    env_file:
-      - .env
+      VAULT_ENVIRONMENT: production
+      VAULT_LOG_LEVEL: INFO
+      # ZFS Configuration
+      VAULT_ZFS_POOL: syn
+      VAULT_ZFS_DATASET: syn/archives
+      VAULT_ZFS_MOUNTPOINT: /mnt/archives
+      # Lofn Replication
+      VAULT_LOFN_HOST: "10.20.30.253"
+      VAULT_LOFN_DATASET: backup/ash-vault
+      # Backblaze B2
+      VAULT_B2_BUCKET: ash-vault-backup-alphabetcartel
 
     # Volume Mounts
     volumes:
@@ -99,6 +107,10 @@ services:
       - /dev/zfs:/dev/zfs
       # SSH keys for Lofn replication
       - /root/.ssh:/root/.ssh:ro
+      # Rclone config for B2 sync
+      - /root/.config/rclone:/root/.config/rclone:ro
+      # ZFS dataset (for rclone to read)
+      - /mnt/archives:/mnt/archives:ro
 
     # Port mapping for health endpoint
     ports:
@@ -107,16 +119,11 @@ services:
     # Docker Secrets
     secrets:
       - discord_alert_token
-      - b2_key_id
-      - b2_application_key
 
     # Health check - uses HTTP endpoint from health server
     healthcheck:
       <<: *health
       test: ["CMD", "curl", "-f", "http://localhost:30886/health"]
-
-    # Privileged for ZFS operations
-    privileged: true
 
     # Logging configuration
     logging:
@@ -128,7 +135,7 @@ services:
     # Labels for organization
     labels:
       - "org.alphabetcartel.service=ash-vault"
-      - "org.alphabetcartel.version=5.0.0"
+      - "org.alphabetcartel.version=5.0.3"
       - "org.alphabetcartel.description=Ash Crisis Archive & Backup Infrastructure"
 
 # =============================================================================
@@ -137,10 +144,6 @@ services:
 secrets:
   discord_alert_token:
     file: ./secrets/discord_alert_token
-  b2_key_id:
-    file: ./secrets/b2_key_id
-  b2_application_key:
-    file: ./secrets/b2_application_key
 
 # =============================================================================
 # Notes

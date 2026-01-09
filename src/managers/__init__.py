@@ -13,9 +13,9 @@ MISSION - NEVER TO BE VIOLATED:
 ============================================================================
 Managers Package - Clean Architecture Factory Functions
 ----------------------------------------------------------------------------
-FILE VERSION: v5.0-1-1.0-1
+FILE VERSION: v5.0-3-3.5a-1
 LAST MODIFIED: 2026-01-09
-PHASE: Phase 1 - Foundation & Infrastructure
+PHASE: Phase 3 - Backup Infrastructure
 CLEAN ARCHITECTURE: Compliant
 Repository: https://github.com/the-alphabet-cartel/ash-vault
 ============================================================================
@@ -28,12 +28,14 @@ USAGE:
         create_config_manager,
         create_secrets_manager,
         create_logging_config_manager,
+        create_alert_manager,
     )
 
     # Initialize managers
     config = create_config_manager()
     secrets = create_secrets_manager()
     logging_mgr = create_logging_config_manager(config)
+    alert_mgr = create_alert_manager(config, logging_mgr)
 """
 
 # Configuration Manager
@@ -57,6 +59,12 @@ from src.managers.logging_config_manager import (
     create_logging_config_manager,
 )
 
+# Alert Manager
+from src.managers.alert_manager import (
+    AlertManager,
+    create_alert_manager,
+)
+
 # =============================================================================
 # Export public interface
 # =============================================================================
@@ -74,4 +82,7 @@ __all__ = [
     # Logging Manager
     "LoggingConfigManager",
     "create_logging_config_manager",
+    # Alert Manager
+    "AlertManager",
+    "create_alert_manager",
 ]

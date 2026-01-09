@@ -13,7 +13,7 @@ MISSION - NEVER TO BE VIOLATED:
 ============================================================================
 Cloud Sync Job - Rclone Sync to Backblaze B2
 ----------------------------------------------------------------------------
-FILE VERSION: v5.0-3-3.5-1
+FILE VERSION: v5.0-3-3.5a-1
 LAST MODIFIED: 2026-01-09
 PHASE: Phase 3 - Backup Infrastructure
 CLEAN ARCHITECTURE: Compliant
@@ -27,7 +27,7 @@ from typing import List, Tuple
 
 from src.managers.alert_manager import create_alert_manager
 
-__version__ = "v5.0-3-3.5-1"
+__version__ = "v5.0-3-3.5a-1"
 
 
 class CloudSyncJob:
@@ -51,10 +51,12 @@ class CloudSyncJob:
         self.alert_manager = create_alert_manager(config_manager, logging_manager)
         
         # Get configuration
-        cloud_config = config_manager.get_section("cloud")
-        self.b2_bucket = cloud_config.get("b2_bucket", "ash-vault-backup-alphabetcartel")
-        self.minio_data_path = cloud_config.get("minio_data_path", "/mnt/archives/minio-data")
-        self.rclone_remote = cloud_config.get("rclone_remote", "b2")
+        b2_config = config_manager.get_section("b2")
+        self.b2_bucket = b2_config.get("bucket", "ash-vault-backup-alphabetcartel")
+        self.rclone_remote = "b2"  # Default rclone remote name
+        
+        zfs_config = config_manager.get_section("zfs")
+        self.minio_data_path = f"{zfs_config.get('mountpoint', '/mnt/archives')}/minio-data"
     
     def _run_command(self, command: List[str], timeout: int = 7200) -> Tuple[bool, str]:
         """

@@ -12,9 +12,9 @@
 # ============================================================================
 # Production Dockerfile - Backup Service
 # ----------------------------------------------------------------------------
-# FILE VERSION: v5.0-1-1.0-1
+# FILE VERSION: v5.0-3-3.5a-1
 # LAST MODIFIED: 2026-01-09
-# PHASE: Phase 1 - Foundation & Infrastructure
+# PHASE: Phase 3 - Backup Infrastructure
 # Repository: https://github.com/the-alphabet-cartel/ash-vault
 # ============================================================================
 #
@@ -66,7 +66,7 @@ FROM python:3.11-slim-bookworm AS runtime
 # Labels
 LABEL org.opencontainers.image.title="Ash-Vault" \
       org.opencontainers.image.description="Crisis Archive & Backup Infrastructure" \
-      org.opencontainers.image.version="5.0.0" \
+      org.opencontainers.image.version="5.0.3" \
       org.opencontainers.image.vendor="The Alphabet Cartel" \
       org.opencontainers.image.source="https://github.com/the-alphabet-cartel/ash-vault" \
       org.opencontainers.image.licenses="MIT"
@@ -88,10 +88,6 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     rclone \
     && rm -rf /var/lib/apt/lists/* \
     && apt-get clean
-
-# Create non-root user (but we may need root for ZFS operations)
-# RUN useradd --create-home --shell /bin/bash ash
-# USER ash
 
 # Set working directory
 WORKDIR /app
