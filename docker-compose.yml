@@ -10,39 +10,41 @@
 #     Protect    → Safeguard our LGBTQIA+ community through vigilant data guardianship
 #
 # ============================================================================
-# Docker Compose Configuration - Backup Service
+# Docker Compose Configuration - Complete Ash-Vault Stack
 # ----------------------------------------------------------------------------
-# FILE VERSION: v5.0-3-3.5a-1
+# FILE VERSION: v5.0-3-3.6-1
 # LAST MODIFIED: 2026-01-09
 # PHASE: Phase 3 - Backup Infrastructure
 # CLEAN ARCHITECTURE: Compliant
 # Repository: https://github.com/the-alphabet-cartel/ash-vault
 # ============================================================================
 #
+# SERVICES:
+#   - minio: S3-compatible object storage (ports 30884/30885)
+#   - ash-vault-backup: Backup automation service (port 30886)
+#
 # USAGE:
-#   # Start services
+#   # Start all services
 #   docker compose up -d
 #
 #   # View logs
-#   docker compose logs -f ash-vault-backup
-#
-#   # Stop services
-#   docker compose down
+#   docker compose logs -f
 #
 #   # Rebuild and start
 #   docker compose up -d --build
 #
-# NOTE:
-#   MinIO runs separately via /opt/minio/docker-compose.yml on Syn VM.
-#   This compose file is for the Python backup service only.
+#   # Stop all services
+#   docker compose down
 #
-# SECRETS:
-#   Secrets are stored in ./secrets/ directory:
-#   - ./secrets/discord_alert_token - Discord webhook for alerts (optional)
+# SECRETS (create in ./secrets/):
+#   - minio_root_user         - MinIO admin username
+#   - minio_root_password     - MinIO admin password
+#   - discord_alert_token     - Discord webhook URL (optional)
 #
 # REQUIREMENTS:
 #   - Docker Engine 24.0+
 #   - Docker Compose v2.20+
+#   - ZFS dataset mounted at /mnt/archives
 #
 # ============================================================================
 
@@ -60,9 +62,50 @@ x-health: &health
   timeout: 10s
   retries: 3
   start_period: 30s
-  start_interval: 10s
 
 services:
+  # ===========================================================================
+  # MinIO Object Storage
+  # ===========================================================================
+  minio:
+    image: minio/minio:latest
+    container_name: minio
+    <<: *common
+    
+    command: server /data --console-address ":30885" --address ":30884"
+    
+    environment:
+      <<: *env
+      MINIO_ROOT_USER_FILE: /run/secrets/minio_root_user
+      MINIO_ROOT_PASSWORD_FILE: /run/secrets/minio_root_password
+    
+    ports:
+      - "30884:30884"   # S3 API
+      - "30885:30885"   # Web Console
+    
+    volumes:
+      - /mnt/archives/minio-data:/data
+    
+    secrets:
+      - minio_root_user
+      - minio_root_password
+    
+    healthcheck:
+      <<: *health
+      test: ["CMD", "curl", "-f", "http://localhost:30884/minio/health/live"]
+      start_period: 10s
+    
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    
+    labels:
+      - "org.alphabetcartel.service=ash-vault-minio"
+      - "org.alphabetcartel.version=5.0.3"
+      - "org.alphabetcartel.description=Ash-Vault MinIO Object Storage"
+
   # ===========================================================================
   # Ash-Vault Backup Service
   # ===========================================================================
@@ -73,18 +116,22 @@ services:
       context: .
       dockerfile: Dockerfile
     <<: *common
+    
+    # Wait for MinIO to be healthy before starting
+    depends_on:
+      minio:
+        condition: service_healthy
 
     # Required for ZFS operations
     privileged: true
 
-    # Resource limits (production)
+    # Resource limits
     deploy:
       resources:
         limits:
           memory: 512M
           cpus: "0.5"
 
-    # Environment variables
     environment:
       <<: *env
       VAULT_ENVIRONMENT: production
@@ -99,7 +146,6 @@ services:
       # Backblaze B2
       VAULT_B2_BUCKET: ash-vault-backup-alphabetcartel
 
-    # Volume Mounts
     volumes:
       # Logs
       - ./logs:/app/logs
@@ -112,48 +158,54 @@ services:
       # ZFS dataset (for rclone to read)
       - /mnt/archives:/mnt/archives:ro
 
-    # Port mapping for health endpoint
     ports:
-      - "30886:30886"
+      - "30886:30886"   # Health/Status API
 
-    # Docker Secrets
     secrets:
       - discord_alert_token
 
-    # Health check - uses HTTP endpoint from health server
     healthcheck:
       <<: *health
       test: ["CMD", "curl", "-f", "http://localhost:30886/health"]
 
-    # Logging configuration
     logging:
       driver: "json-file"
       options:
         max-size: "50m"
         max-file: "5"
 
-    # Labels for organization
     labels:
-      - "org.alphabetcartel.service=ash-vault"
+      - "org.alphabetcartel.service=ash-vault-backup"
       - "org.alphabetcartel.version=5.0.3"
-      - "org.alphabetcartel.description=Ash Crisis Archive & Backup Infrastructure"
+      - "org.alphabetcartel.description=Ash-Vault Backup Automation Service"
 
 # =============================================================================
 # Secrets
 # =============================================================================
 secrets:
+  minio_root_user:
+    file: ./secrets/minio_root_user
+  minio_root_password:
+    file: ./secrets/minio_root_password
   discord_alert_token:
     file: ./secrets/discord_alert_token
 
 # =============================================================================
 # Notes
 # =============================================================================
-# This compose file runs the Python backup service that handles:
-#   - ZFS snapshot creation and rotation
-#   - ZFS replication to Lofn (via SSH)
-#   - Backblaze B2 cloud sync (via rclone)
-#   - Health endpoint on port 30886
+# Port Allocation:
+#   - 30884: MinIO S3 API
+#   - 30885: MinIO Web Console
+#   - 30886: Backup Service Health API
 #
-# MinIO is deployed separately in /opt/minio/docker-compose.yml
-# See docs/v5.0/phase2/planning.md for MinIO setup
+# Data Storage:
+#   - MinIO data: /mnt/archives/minio-data (ZFS encrypted)
+#   - Backup logs: ./logs/
+#
+# Backup Schedule:
+#   - Daily snapshots: 3 AM
+#   - Weekly snapshots: 3 AM Sunday
+#   - Monthly snapshots: 3 AM 1st
+#   - Lofn replication: 4 AM daily
+#   - B2 cloud sync: 5 AM Sunday
 # =============================================================================
