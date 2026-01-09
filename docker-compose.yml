@@ -1,0 +1,156 @@
+# ============================================================================
+# Ash-Vault: Crisis Archive & Backup Infrastructure
+# The Alphabet Cartel - https://discord.gg/alphabetcartel | alphabetcartel.org
+# ============================================================================
+#
+# MISSION - NEVER TO BE VIOLATED:
+#     Secure     → Encrypt sensitive session data with defense-in-depth layering
+#     Archive    → Preserve crisis records in resilient object storage
+#     Replicate  → Maintain backups across device, site, and cloud tiers
+#     Protect    → Safeguard our LGBTQIA+ community through vigilant data guardianship
+#
+# ============================================================================
+# Docker Compose Configuration - Backup Service
+# ----------------------------------------------------------------------------
+# FILE VERSION: v5.0-1-1.0-1
+# LAST MODIFIED: 2026-01-09
+# PHASE: Phase 1 - Foundation
+# CLEAN ARCHITECTURE: Compliant
+# Repository: https://github.com/the-alphabet-cartel/ash-vault
+# ============================================================================
+#
+# USAGE:
+#   # Start services
+#   docker compose up -d
+#
+#   # View logs
+#   docker compose logs -f ash-vault-backup
+#
+#   # Stop services
+#   docker compose down
+#
+#   # Rebuild and start
+#   docker compose up -d --build
+#
+# NOTE:
+#   MinIO runs separately via /opt/minio/docker-compose.yml on Syn VM.
+#   This compose file is for the Python backup service only.
+#
+# SECRETS:
+#   Secrets are stored in ./secrets/ directory:
+#   - ./secrets/discord_alert_token - Discord webhook for alerts (optional)
+#   - ./secrets/b2_key_id          - Backblaze B2 key ID
+#   - ./secrets/b2_application_key - Backblaze B2 application key
+#
+# REQUIREMENTS:
+#   - Docker Engine 24.0+
+#   - Docker Compose v2.20+
+#
+# ============================================================================
+
+### Common Variables ###
+x-common: &common
+  restart: unless-stopped
+
+### Common Environmental Variables ###
+x-env: &env
+  TZ: America/Los_Angeles
+  PGID: 1001
+  PUID: 1001
+
+### Healthchecks ###
+x-health: &health
+  interval: 30s
+  timeout: 10s
+  retries: 3
+  start_period: 30s
+  start_interval: 10s
+
+services:
+  # ===========================================================================
+  # Ash-Vault Backup Service
+  # ===========================================================================
+  ash-vault-backup:
+    image: ghcr.io/the-alphabet-cartel/ash-vault:latest
+    container_name: ash-vault-backup
+    build:
+      context: .
+      dockerfile: Dockerfile
+    <<: *common
+
+    # Resource limits (production)
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: "0.5"
+
+    # Environment variables
+    environment:
+      <<: *env
+    env_file:
+      - .env
+
+    # Volume Mounts
+    volumes:
+      # Logs
+      - ./logs:/app/logs
+      # ZFS commands need access to host ZFS
+      - /dev/zfs:/dev/zfs
+      # SSH keys for Lofn replication
+      - /root/.ssh:/root/.ssh:ro
+
+    # Port mapping for health endpoint
+    ports:
+      - "30886:30886"
+
+    # Docker Secrets
+    secrets:
+      - discord_alert_token
+      - b2_key_id
+      - b2_application_key
+
+    # Health check - uses HTTP endpoint from health server
+    healthcheck:
+      <<: *health
+      test: ["CMD", "curl", "-f", "http://localhost:30886/health"]
+
+    # Privileged for ZFS operations
+    privileged: true
+
+    # Logging configuration
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "50m"
+        max-file: "5"
+
+    # Labels for organization
+    labels:
+      - "org.alphabetcartel.service=ash-vault"
+      - "org.alphabetcartel.version=5.0.0"
+      - "org.alphabetcartel.description=Ash Crisis Archive & Backup Infrastructure"
+
+# =============================================================================
+# Secrets
+# =============================================================================
+secrets:
+  discord_alert_token:
+    file: ./secrets/discord_alert_token
+  b2_key_id:
+    file: ./secrets/b2_key_id
+  b2_application_key:
+    file: ./secrets/b2_application_key
+
+# =============================================================================
+# Notes
+# =============================================================================
+# This compose file runs the Python backup service that handles:
+#   - ZFS snapshot creation and rotation
+#   - ZFS replication to Lofn (via SSH)
+#   - Backblaze B2 cloud sync (via rclone)
+#   - Health endpoint on port 30886
+#
+# MinIO is deployed separately in /opt/minio/docker-compose.yml
+# See docs/v5.0/phase2/planning.md for MinIO setup
+# =============================================================================

@@ -1,0 +1,289 @@
+{
+  "_metadata": {
+    "file_version": "v5.0-1-1.0-1",
+    "last_modified": "2026-01-09",
+    "clean_architecture": "Compliant",
+    "description": "Ash-Vault v5.0 Default Configuration",
+    "repository": "https://github.com/the-alphabet-cartel/ash-vault",
+    "community": "The Alphabet Cartel - https://discord.gg/alphabetcartel | https://alphabetcartel.org"
+  },
+
+  "server": {
+    "description": "Health endpoint server configuration",
+    "host": "${VAULT_HOST}",
+    "port": "${VAULT_PORT}",
+    "debug": "${VAULT_DEBUG}",
+    "defaults": {
+      "host": "0.0.0.0",
+      "port": 30886,
+      "debug": false
+    },
+    "validation": {
+      "host": {
+        "type": "string",
+        "required": true
+      },
+      "port": {
+        "type": "integer",
+        "range": [1024, 65535],
+        "required": true
+      },
+      "debug": {
+        "type": "boolean",
+        "required": false
+      }
+    }
+  },
+
+  "logging": {
+    "description": "Logging configuration for structured output",
+    "level": "${VAULT_LOG_LEVEL}",
+    "format": "${VAULT_LOG_FORMAT}",
+    "file": "${VAULT_LOG_FILE}",
+    "console": "${VAULT_LOG_CONSOLE}",
+    "defaults": {
+      "level": "INFO",
+      "format": "human",
+      "file": "/app/logs/ash-vault.log",
+      "console": true
+    },
+    "validation": {
+      "level": {
+        "type": "string",
+        "allowed_values": ["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"],
+        "required": true
+      },
+      "format": {
+        "type": "string",
+        "allowed_values": ["json", "human"],
+        "required": true
+      },
+      "file": {
+        "type": "string",
+        "required": true
+      },
+      "console": {
+        "type": "boolean",
+        "required": false
+      }
+    }
+  },
+
+  "minio": {
+    "description": "MinIO S3-compatible storage configuration",
+    "endpoint": "${VAULT_MINIO_ENDPOINT}",
+    "port": "${VAULT_MINIO_PORT}",
+    "secure": "${VAULT_MINIO_SECURE}",
+    "defaults": {
+      "endpoint": "localhost",
+      "port": 30884,
+      "secure": false
+    },
+    "validation": {
+      "endpoint": {
+        "type": "string",
+        "required": true
+      },
+      "port": {
+        "type": "integer",
+        "range": [1, 65535],
+        "required": true
+      },
+      "secure": {
+        "type": "boolean",
+        "required": false
+      }
+    }
+  },
+
+  "buckets": {
+    "description": "MinIO bucket names for different data types",
+    "archives": "${VAULT_BUCKET_ARCHIVES}",
+    "documents": "${VAULT_BUCKET_DOCUMENTS}",
+    "exports": "${VAULT_BUCKET_EXPORTS}",
+    "defaults": {
+      "archives": "ash-archives",
+      "documents": "ash-documents",
+      "exports": "ash-exports"
+    },
+    "validation": {
+      "archives": {
+        "type": "string",
+        "required": true
+      },
+      "documents": {
+        "type": "string",
+        "required": true
+      },
+      "exports": {
+        "type": "string",
+        "required": true
+      }
+    }
+  },
+
+  "zfs": {
+    "description": "ZFS snapshot and dataset configuration",
+    "pool": "${VAULT_ZFS_POOL}",
+    "dataset": "${VAULT_ZFS_DATASET}",
+    "mountpoint": "${VAULT_ZFS_MOUNTPOINT}",
+    "defaults": {
+      "pool": "syn",
+      "dataset": "syn/archives",
+      "mountpoint": "/mnt/archives"
+    },
+    "validation": {
+      "pool": {
+        "type": "string",
+        "required": true
+      },
+      "dataset": {
+        "type": "string",
+        "required": true
+      },
+      "mountpoint": {
+        "type": "string",
+        "required": true
+      }
+    }
+  },
+
+  "backup_schedules": {
+    "description": "Backup schedule configuration (cron format)",
+    "snapshot_daily": "${VAULT_SCHEDULE_SNAPSHOT_DAILY}",
+    "snapshot_weekly": "${VAULT_SCHEDULE_SNAPSHOT_WEEKLY}",
+    "snapshot_monthly": "${VAULT_SCHEDULE_SNAPSHOT_MONTHLY}",
+    "replication_lofn": "${VAULT_SCHEDULE_REPLICATION_LOFN}",
+    "sync_b2": "${VAULT_SCHEDULE_SYNC_B2}",
+    "defaults": {
+      "snapshot_daily": "0 3 * * *",
+      "snapshot_weekly": "0 3 * * 0",
+      "snapshot_monthly": "0 3 1 * *",
+      "replication_lofn": "0 4 * * *",
+      "sync_b2": "0 5 * * 0"
+    },
+    "validation": {
+      "snapshot_daily": {
+        "type": "string",
+        "required": true
+      },
+      "snapshot_weekly": {
+        "type": "string",
+        "required": true
+      },
+      "snapshot_monthly": {
+        "type": "string",
+        "required": true
+      },
+      "replication_lofn": {
+        "type": "string",
+        "required": true
+      },
+      "sync_b2": {
+        "type": "string",
+        "required": true
+      }
+    }
+  },
+
+  "retention": {
+    "description": "Snapshot retention policy",
+    "daily_count": "${VAULT_RETENTION_DAILY}",
+    "weekly_count": "${VAULT_RETENTION_WEEKLY}",
+    "monthly_count": "${VAULT_RETENTION_MONTHLY}",
+    "defaults": {
+      "daily_count": 7,
+      "weekly_count": 4,
+      "monthly_count": 12
+    },
+    "validation": {
+      "daily_count": {
+        "type": "integer",
+        "range": [1, 30],
+        "required": true
+      },
+      "weekly_count": {
+        "type": "integer",
+        "range": [1, 12],
+        "required": true
+      },
+      "monthly_count": {
+        "type": "integer",
+        "range": [1, 24],
+        "required": true
+      }
+    }
+  },
+
+  "replication": {
+    "description": "ZFS replication to Lofn configuration",
+    "lofn_host": "${VAULT_LOFN_HOST}",
+    "lofn_dataset": "${VAULT_LOFN_DATASET}",
+    "ssh_key_path": "${VAULT_SSH_KEY_PATH}",
+    "defaults": {
+      "lofn_host": "10.20.30.253",
+      "lofn_dataset": "backup/ash-vault",
+      "ssh_key_path": "/root/.ssh/id_ed25519_lofn"
+    },
+    "validation": {
+      "lofn_host": {
+        "type": "string",
+        "required": true
+      },
+      "lofn_dataset": {
+        "type": "string",
+        "required": true
+      },
+      "ssh_key_path": {
+        "type": "string",
+        "required": true
+      }
+    }
+  },
+
+  "b2": {
+    "description": "Backblaze B2 cloud backup configuration",
+    "enabled": "${VAULT_B2_ENABLED}",
+    "bucket": "${VAULT_B2_BUCKET}",
+    "defaults": {
+      "enabled": true,
+      "bucket": "ash-vault-backup"
+    },
+    "validation": {
+      "enabled": {
+        "type": "boolean",
+        "required": false
+      },
+      "bucket": {
+        "type": "string",
+        "required": true
+      }
+    }
+  },
+
+  "alerting": {
+    "description": "Discord webhook alerting configuration",
+    "enabled": "${VAULT_ALERTING_ENABLED}",
+    "on_backup_success": "${VAULT_ALERT_ON_SUCCESS}",
+    "on_backup_failure": "${VAULT_ALERT_ON_FAILURE}",
+    "defaults": {
+      "enabled": true,
+      "on_backup_success": false,
+      "on_backup_failure": true
+    },
+    "validation": {
+      "enabled": {
+        "type": "boolean",
+        "required": false
+      },
+      "on_backup_success": {
+        "type": "boolean",
+        "required": false
+      },
+      "on_backup_failure": {
+        "type": "boolean",
+        "required": false
+      }
+    }
+  }
+}

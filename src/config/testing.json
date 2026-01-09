@@ -1,0 +1,45 @@
+{
+	"_metadata": {
+		"file_version": "v5.0",
+		"last_modified": "2025-01-03",
+		"clean_architecture": "Compliant",
+		"description": "Ash-Thrash v5.0 Testing Configuration Overrides",
+		"note": "Optimized for debugging and reproducible test runs",
+		"repository": "https://github.com/the-alphabet-cartel/ash-thrash",
+		"community": "The Alphabet Cartel - https://discord.gg/alphabetcartel | https://alphabetcartel.org"
+	},
+
+	"logging": {
+		"description": "Testing logging - human readable for debugging",
+		"level": "DEBUG",
+		"format": "text",
+		"file": "/app/logs/ash-thrash-tests.log",
+		"console": true
+		"defaults": {
+			"level": "DEBUG",
+			"format": "text",
+			"file": "/app/logs/ash-thrash-tests.log",
+			"console": true
+		},
+		"validation": {
+			"level": {
+				"type": "string",
+				"allowed_values": ["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"],
+				"required": true
+			},
+			"format": {
+				"type": "string",
+				"allowed_values": ["json", "text"],
+				"required": true
+			},
+			"file": {
+				"type": "string",
+				"required": true
+			},
+			"console": {
+				"type": "boolean",
+				"required": false
+			}
+		}
+	}
+}
