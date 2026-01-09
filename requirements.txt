@@ -1,0 +1,94 @@
+# ============================================================================
+# Ash-Vault: Crisis Archive & Backup Infrastructure
+# The Alphabet Cartel - https://discord.gg/alphabetcartel | alphabetcartel.org
+# ============================================================================
+#
+# MISSION - NEVER TO BE VIOLATED:
+#     Secure     → Encrypt sensitive session data with defense-in-depth layering
+#     Archive    → Preserve crisis records in resilient object storage
+#     Replicate  → Maintain backups across device, site, and cloud tiers
+#     Protect    → Safeguard our LGBTQIA+ community through vigilant data guardianship
+#
+# ============================================================================
+# Python Requirements
+# ----------------------------------------------------------------------------
+# FILE VERSION: v5.0-1-1.0-1
+# LAST MODIFIED: 2026-01-09
+# PHASE: Phase 1 - Foundation & Infrastructure
+# Repository: https://github.com/the-alphabet-cartel/ash-vault
+# ============================================================================
+#
+# INSTALLATION:
+#   pip install -r requirements.txt
+#
+# NOTE: Use python3.11 -m pip for version-specific installation (Rule #12)
+#
+# ============================================================================
+
+# =============================================================================
+# Core Framework
+# =============================================================================
+
+# FastAPI - Health endpoint server
+fastapi>=0.109.0,<1.0.0
+
+# Uvicorn - ASGI server for health endpoint
+uvicorn[standard]>=0.27.0,<1.0.0
+
+# =============================================================================
+# Scheduling
+# =============================================================================
+
+# APScheduler - Cron-like job scheduling for backups
+apscheduler>=3.10.0,<4.0.0
+
+# =============================================================================
+# MinIO / S3
+# =============================================================================
+
+# MinIO Python SDK - S3-compatible storage client
+minio>=7.2.0,<8.0.0
+
+# =============================================================================
+# SSH / Remote Operations
+# =============================================================================
+
+# Paramiko - SSH client for ZFS replication to Lofn
+paramiko>=3.4.0,<4.0.0
+
+# =============================================================================
+# Utilities
+# =============================================================================
+
+# Python-dotenv - Environment variable loading
+python-dotenv>=1.0.0,<2.0.0
+
+# Pydantic - Data validation
+pydantic>=2.5.0,<3.0.0
+
+# =============================================================================
+# HTTP and Networking
+# =============================================================================
+
+# HTTPX - Async HTTP client (for webhooks, health checks)
+httpx>=0.26.0,<1.0.0
+
+# AIOHTTP - Async HTTP client (for Discord alerting)
+aiohttp>=3.9.0,<4.0.0
+
+# =============================================================================
+# Testing (Development Only)
+# =============================================================================
+
+# Pytest - Testing framework
+pytest>=7.4.0,<8.0.0
+
+# Pytest-asyncio - Async test support
+pytest-asyncio>=0.23.0,<1.0.0
+
+# =============================================================================
+# Optional: Structured Logging
+# =============================================================================
+
+# Structlog - Structured logging (optional, for JSON logs)
+# structlog>=24.1.0,<25.0.0

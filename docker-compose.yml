@@ -1,0 +1,234 @@
+# ============================================================================
+# Ash-Vault: Crisis Archive & Backup Infrastructure
+# The Alphabet Cartel - https://discord.gg/alphabetcartel | alphabetcartel.org
+# ============================================================================
+#
+# MISSION - NEVER TO BE VIOLATED:
+#     Secure     → Encrypt sensitive session data with defense-in-depth layering
+#     Archive    → Preserve crisis records in resilient object storage
+#     Replicate  → Maintain backups across device, site, and cloud tiers
+#     Protect    → Safeguard our LGBTQIA+ community through vigilant data guardianship
+#
+# ============================================================================
+# Docker Compose Configuration - Complete Ash-Vault Stack
+# ----------------------------------------------------------------------------
+# FILE VERSION: v5.0-3-3.6-3
+# LAST MODIFIED: 2026-01-09
+# PHASE: Phase 3 - Backup Infrastructure
+# CLEAN ARCHITECTURE: Compliant
+# Repository: https://github.com/the-alphabet-cartel/ash-vault
+# ============================================================================
+#
+# SERVICES:
+#   - minio: S3-compatible object storage (ports 30884/30885)
+#   - ash-vault-backup: Backup automation service (port 30886)
+#
+# USAGE:
+#   # First time setup
+#   cp .env.template .env
+#   # Edit .env with your values
+#
+#   # Start all services
+#   docker compose up -d
+#
+#   # View logs
+#   docker compose logs -f
+#
+#   # Rebuild and start
+#   docker compose up -d --build
+#
+#   # Stop all services
+#   docker compose down
+#
+# SECRETS (create in ./secrets/):
+#   - minio_root_user         - MinIO admin username
+#   - minio_root_password     - MinIO admin password
+#   - discord_alert_token     - Discord webhook URL (optional)
+#
+# REQUIREMENTS:
+#   - Docker Engine 24.0+
+#   - Docker Compose v2.20+
+#   - ZFS dataset mounted at /mnt/archives
+#   - .env file (copy from .env.template)
+#
+# ============================================================================
+
+### Common Variables ###
+x-common: &common
+  networks:
+    - ash-vault
+  restart: unless-stopped
+
+### Common Environmental Variables ###
+x-env: &env
+  PGID: 1001
+  PUID: 1001
+  TZ: America/Los_Angeles
+
+### Healthchecks ###
+x-health: &health
+  interval: 30s
+  timeout: 10s
+  retries: 3
+  start_period: 120s
+  start_interval: 10s
+
+services:
+  # ===========================================================================
+  # MinIO Object Storage
+  # ===========================================================================
+  ash-vault-minio:
+    image: minio/minio:latest
+    container_name: ash-vault-minio
+    <<: *common
+
+    command: server /data --console-address ":${MINIO_CONSOLE_PORT:-30885}" --address ":${MINIO_API_PORT:-30884}"
+
+    # Environment variables
+    environment:
+      <<: *env
+      MINIO_ROOT_USER_FILE: /run/secrets/minio_root_user
+      MINIO_ROOT_PASSWORD_FILE: /run/secrets/minio_root_password
+    env_file:
+      - .env
+
+    ports:
+      - "${MINIO_API_PORT:-30884}:${MINIO_API_PORT:-30884}"
+      - "${MINIO_CONSOLE_PORT:-30885}:${MINIO_CONSOLE_PORT:-30885}"
+
+    volumes:
+      - ${VAULT_ZFS_MOUNTPOINT:-/mnt/archives}/minio-data:/data
+
+    secrets:
+      - minio_root_user
+      - minio_root_password
+
+    healthcheck:
+      <<: *health
+      test:
+        [
+          "CMD",
+          "curl",
+          "-f",
+          "http://localhost:${MINIO_API_PORT:-30884}/minio/health/live",
+        ]
+      start_period: 10s
+
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+    labels:
+      - "org.alphabetcartel.service=ash-vault-minio"
+      - "org.alphabetcartel.version=5.0.3"
+      - "org.alphabetcartel.description=Ash-Vault MinIO Object Storage"
+
+  # ===========================================================================
+  # Ash-Vault Backup Service
+  # ===========================================================================
+  ash-vault-backup:
+    image: ghcr.io/the-alphabet-cartel/ash-vault:latest
+    container_name: ash-vault-backup
+    build:
+      context: .
+      dockerfile: Dockerfile
+    <<: *common
+
+    # Required for ZFS operations
+    privileged: true
+
+    # Resource limits
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: "0.5"
+
+    # Environment variables
+    environment:
+      <<: *env
+    env_file:
+      - .env
+
+    volumes:
+      # Logs
+      - ./logs:/app/logs
+      # ZFS commands need access to host ZFS
+      - /dev/zfs:/dev/zfs
+      # SSH keys for Lofn replication
+      - /root/.ssh:/root/.ssh:ro
+      # Rclone config for B2 sync
+      - /root/.config/rclone:/root/.config/rclone:ro
+      # ZFS dataset (for rclone to read)
+      - ${VAULT_ZFS_MOUNTPOINT:-/mnt/archives}:${VAULT_ZFS_MOUNTPOINT:-/mnt/archives}:ro
+
+    ports:
+      - "${VAULT_PORT:-30886}:${VAULT_PORT:-30886}"
+
+    secrets:
+      - discord_alert_token
+
+    healthcheck:
+      <<: *health
+      test:
+        ["CMD", "curl", "-f", "http://localhost:${VAULT_PORT:-30886}/health"]
+
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "50m"
+        max-file: "5"
+
+    # Wait for MinIO to be healthy before starting
+    depends_on:
+      ash-vault-minio:
+        condition: service_healthy
+
+    labels:
+      - "org.alphabetcartel.service=ash-vault-backup"
+      - "org.alphabetcartel.version=5.0.3"
+      - "org.alphabetcartel.description=Ash-Vault Backup Automation Service"
+
+# =============================================================================
+# Secrets
+# =============================================================================
+secrets:
+  minio_root_user:
+    file: ./secrets/minio_root_user
+  minio_root_password:
+    file: ./secrets/minio_root_password
+  discord_alert_token:
+    file: ./secrets/discord_alert_token
+
+# =============================================================================
+# Volumes
+# =============================================================================
+
+# =============================================================================
+# Networks
+# =============================================================================
+networks:
+  ash-vault:
+    name: ash-vault
+    driver: bridge
+    external: true
+
+# =============================================================================
+# Notes
+# =============================================================================
+# Port Allocation (configurable via .env):
+#   - MINIO_API_PORT (default 30884): MinIO S3 API
+#   - MINIO_CONSOLE_PORT (default 30885): MinIO Web Console
+#   - VAULT_PORT (default 30886): Backup Service Health API
+#
+# Data Storage:
+#   - MinIO data: ${VAULT_ZFS_MOUNTPOINT}/minio-data (ZFS encrypted)
+#   - Backup logs: ./logs/
+#
+# Configuration:
+#   - All settings loaded from .env file
+#   - Copy .env.template to .env and customize
+#   - Secrets stored in ./secrets/ directory
+# =============================================================================
