@@ -75,21 +75,29 @@ Ash-Vault provides secure archive storage and backup infrastructure for the [Ash
 
 ### Deployment
 
-1. **Phase 1**: Create Syn VM with ZFS encryption
-   ```
-   See: docs/v5.0/phase1/syn-vm-setup.md
-   ```
+```bash
+# Clone repository
+mkdir -p /dockers
+cd /dockers
+git clone -b v5.0 https://github.com/The-Alphabet-Cartel/ash-vault.git
+cd ash-vault
 
-2. **Phase 2**: Deploy MinIO
-   ```bash
-   cd /opt/minio
-   docker compose up -d
-   ```
+# Configure
+cp .env.template .env
 
-3. **Phase 3**: Configure backups
-   ```
-   See: docs/v5.0/phase3/planning.md
-   ```
+# Create secrets
+mkdir -p secrets
+echo "ashadmin" > secrets/minio_root_user
+openssl rand -base64 32 > secrets/minio_root_password
+touch secrets/discord_alert_token
+chmod 600 secrets/*
+
+# Deploy
+docker compose up -d
+
+# Verify
+curl http://localhost:30886/health | jq
+```
 
 ---
 
@@ -135,10 +143,10 @@ Ash-Vault provides secure archive storage and backup infrastructure for the [Ash
 | Document | Description |
 |----------|-------------|
 | [Roadmap](docs/v5.0/roadmap.md) | Project phases and status |
+| [Operations Guide](docs/operations/operations_guide.md) | Day-to-day maintenance |
+| [Troubleshooting](docs/operations/troubleshooting.md) | Common issues and fixes |
+| [Recovery Runbook](docs/v5.0/phase4/recovery_runbook.md) | Disaster recovery procedures |
 | [VM Setup](docs/v5.0/phase1/syn-vm-setup.md) | Syn VM installation guide |
-| [MinIO Deployment](docs/v5.0/phase2/planning.md) | Object storage setup |
-| [Backup Setup](docs/v5.0/phase3/planning.md) | 1-2-3 backup configuration |
-| [Testing](docs/v5.0/phase4/planning.md) | Verification procedures |
 
 ---
 
