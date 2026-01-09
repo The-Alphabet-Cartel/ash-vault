@@ -12,7 +12,7 @@
 # ============================================================================
 # Docker Compose Configuration - Complete Ash-Vault Stack
 # ----------------------------------------------------------------------------
-# FILE VERSION: v5.0-3-3.6-1
+# FILE VERSION: v5.0-3-3.6-3
 # LAST MODIFIED: 2026-01-09
 # PHASE: Phase 3 - Backup Infrastructure
 # CLEAN ARCHITECTURE: Compliant
@@ -24,6 +24,10 @@
 #   - ash-vault-backup: Backup automation service (port 30886)
 #
 # USAGE:
+#   # First time setup
+#   cp .env.template .env
+#   # Edit .env with your values
+#
 #   # Start all services
 #   docker compose up -d
 #
@@ -45,16 +49,15 @@
 #   - Docker Engine 24.0+
 #   - Docker Compose v2.20+
 #   - ZFS dataset mounted at /mnt/archives
+#   - .env file (copy from .env.template)
 #
 # ============================================================================
 
 ### Common Variables ###
 x-common: &common
+  networks:
+    - ash-vault
   restart: unless-stopped
-
-### Common Environmental Variables ###
-x-env: &env
-  TZ: America/Los_Angeles
 
 ### Healthchecks ###
 x-health: &health
@@ -67,40 +70,43 @@ services:
   # ===========================================================================
   # MinIO Object Storage
   # ===========================================================================
-  minio:
+  ash-vault-minio:
     image: minio/minio:latest
-    container_name: minio
+    container_name: ash-vault-minio
     <<: *common
-    
-    command: server /data --console-address ":30885" --address ":30884"
-    
+
+    command: server /data --console-address ":${MINIO_CONSOLE_PORT:-30885}" --address ":${MINIO_API_PORT:-30884}"
+
+    # Environment variables
     environment:
       <<: *env
       MINIO_ROOT_USER_FILE: /run/secrets/minio_root_user
       MINIO_ROOT_PASSWORD_FILE: /run/secrets/minio_root_password
-    
+    env_file:
+      - .env
+
     ports:
-      - "30884:30884"   # S3 API
-      - "30885:30885"   # Web Console
-    
+      - "${MINIO_API_PORT:-30884}:${MINIO_API_PORT:-30884}"
+      - "${MINIO_CONSOLE_PORT:-30885}:${MINIO_CONSOLE_PORT:-30885}"
+
     volumes:
-      - /mnt/archives/minio-data:/data
-    
+      - ${VAULT_ZFS_MOUNTPOINT:-/mnt/archives}/minio-data:/data
+
     secrets:
       - minio_root_user
       - minio_root_password
-    
+
     healthcheck:
       <<: *health
-      test: ["CMD", "curl", "-f", "http://localhost:30884/minio/health/live"]
+      test: ["CMD", "curl", "-f", "http://localhost:${MINIO_API_PORT:-30884}/minio/health/live"]
       start_period: 10s
-    
+
     logging:
       driver: "json-file"
       options:
         max-size: "10m"
         max-file: "3"
-    
+
     labels:
       - "org.alphabetcartel.service=ash-vault-minio"
       - "org.alphabetcartel.version=5.0.3"
@@ -116,11 +122,6 @@ services:
       context: .
       dockerfile: Dockerfile
     <<: *common
-    
-    # Wait for MinIO to be healthy before starting
-    depends_on:
-      minio:
-        condition: service_healthy
 
     # Required for ZFS operations
     privileged: true
@@ -132,19 +133,11 @@ services:
           memory: 512M
           cpus: "0.5"
 
+    # Environment variables
     environment:
       <<: *env
-      VAULT_ENVIRONMENT: production
-      VAULT_LOG_LEVEL: INFO
-      # ZFS Configuration
-      VAULT_ZFS_POOL: syn
-      VAULT_ZFS_DATASET: syn/archives
-      VAULT_ZFS_MOUNTPOINT: /mnt/archives
-      # Lofn Replication
-      VAULT_LOFN_HOST: "10.20.30.253"
-      VAULT_LOFN_DATASET: backup/ash-vault
-      # Backblaze B2
-      VAULT_B2_BUCKET: ash-vault-backup-alphabetcartel
+    env_file:
+      - .env
 
     volumes:
       # Logs
@@ -156,23 +149,28 @@ services:
       # Rclone config for B2 sync
       - /root/.config/rclone:/root/.config/rclone:ro
       # ZFS dataset (for rclone to read)
-      - /mnt/archives:/mnt/archives:ro
+      - ${VAULT_ZFS_MOUNTPOINT:-/mnt/archives}:${VAULT_ZFS_MOUNTPOINT:-/mnt/archives}:ro
 
     ports:
-      - "30886:30886"   # Health/Status API
+      - "${VAULT_PORT:-30886}:${VAULT_PORT:-30886}"
 
     secrets:
       - discord_alert_token
 
     healthcheck:
       <<: *health
-      test: ["CMD", "curl", "-f", "http://localhost:30886/health"]
+      test: ["CMD", "curl", "-f", "http://localhost:${VAULT_PORT:-30886}/health"]
 
     logging:
       driver: "json-file"
       options:
         max-size: "50m"
         max-file: "5"
+
+    # Wait for MinIO to be healthy before starting
+    depends_on:
+      ash-vault-minio:
+        condition: service_healthy
 
     labels:
       - "org.alphabetcartel.service=ash-vault-backup"
@@ -191,21 +189,32 @@ secrets:
     file: ./secrets/discord_alert_token
 
 # =============================================================================
+# Volumes
+# =============================================================================
+
+# =============================================================================
+# Networks
+# =============================================================================
+networks:
+  ash-vault:
+    name: ash-vault
+    driver: bridge
+    external: true
+
+# =============================================================================
 # Notes
 # =============================================================================
-# Port Allocation:
-#   - 30884: MinIO S3 API
-#   - 30885: MinIO Web Console
-#   - 30886: Backup Service Health API
+# Port Allocation (configurable via .env):
+#   - MINIO_API_PORT (default 30884): MinIO S3 API
+#   - MINIO_CONSOLE_PORT (default 30885): MinIO Web Console
+#   - VAULT_PORT (default 30886): Backup Service Health API
 #
 # Data Storage:
-#   - MinIO data: /mnt/archives/minio-data (ZFS encrypted)
+#   - MinIO data: ${VAULT_ZFS_MOUNTPOINT}/minio-data (ZFS encrypted)
 #   - Backup logs: ./logs/
 #
-# Backup Schedule:
-#   - Daily snapshots: 3 AM
-#   - Weekly snapshots: 3 AM Sunday
-#   - Monthly snapshots: 3 AM 1st
-#   - Lofn replication: 4 AM daily
-#   - B2 cloud sync: 5 AM Sunday
+# Configuration:
+#   - All settings loaded from .env file
+#   - Copy .env.template to .env and customize
+#   - Secrets stored in ./secrets/ directory
 # =============================================================================
