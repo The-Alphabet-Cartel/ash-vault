@@ -1,6 +1,6 @@
 # Ash-Vault Secrets Directory
 
-**Version**: v5.0-3-3.6-1  
+**Version**: v5.0-4-1.0-1  
 **Repository**: https://github.com/the-alphabet-cartel/ash-vault  
 **Community**: [The Alphabet Cartel](https://discord.gg/alphabetcartel) | [alphabetcartel.org](https://alphabetcartel.org)
 
@@ -19,9 +19,12 @@ This directory contains sensitive credentials. These files are:
 
 | Secret File | Service | Description | Required |
 |-------------|---------|-------------|----------|
+| `ash_vault_discord_alert_token` | Backup Service | Discord webhook URL for Ash-Vault alerts | ⚡ Optional |
 | `minio_root_user` | MinIO | Admin username | ✅ Yes |
 | `minio_root_password` | MinIO | Admin password (32+ chars recommended) | ✅ Yes |
-| `discord_alert_token` | Backup Service | Discord webhook URL for alerts | ⚡ Optional |
+
+> **Note**: Each Ash module now uses its own Discord alert webhook for independent routing.
+> The legacy shared `discord_alert_token` is deprecated.
 
 ---
 
@@ -41,24 +44,27 @@ chmod 600 ./secrets/minio_root_user
 chmod 600 ./secrets/minio_root_password
 ```
 
-### 2. Discord Webhook (Optional)
+### 2. Ash-Vault Discord Alert Webhook (Optional)
 
-If you want backup failure alerts in Discord:
+For backup failure alerts and system notifications from Ash-Vault:
 
-1. Create a Discord webhook in your server
-2. Copy the webhook URL
-3. Create the secret file:
+1. In Discord: Server Settings → Integrations → Webhooks → New Webhook
+2. Name it something like "Ash-Vault Alerts"
+3. Select the channel for alerts (e.g., #ash-vault-alerts or #ash-backup-alerts)
+4. Copy the webhook URL
+5. Create the secret file:
 
 ```bash
-echo "https://discord.com/api/webhooks/YOUR_WEBHOOK_URL" > ./secrets/discord_alert_token
-chmod 600 ./secrets/discord_alert_token
+# Create the webhook secret for Ash-Vault
+echo "https://discord.com/api/webhooks/YOUR_WEBHOOK_ID/YOUR_WEBHOOK_TOKEN" > ./secrets/ash_vault_discord_alert_token
+chmod 600 ./secrets/ash_vault_discord_alert_token
 ```
 
 If you don't want Discord alerts, create an empty file:
 
 ```bash
-touch ./secrets/discord_alert_token
-chmod 600 ./secrets/discord_alert_token
+touch ./secrets/ash_vault_discord_alert_token
+chmod 600 ./secrets/ash_vault_discord_alert_token
 ```
 
 ---
@@ -67,10 +73,10 @@ chmod 600 ./secrets/discord_alert_token
 
 ```
 secrets/
-├── README.md              # This file
-├── minio_root_user        # MinIO admin username
-├── minio_root_password    # MinIO admin password
-└── discord_alert_token    # Discord webhook URL (or empty)
+├── README.md                       # This file
+├── ash_vault_discord_alert_token   # Discord webhook URL (or empty)
+├── minio_root_user                 # MinIO admin username
+└── minio_root_password             # MinIO admin password
 ```
 
 ---
@@ -85,9 +91,9 @@ ls -la ./secrets/
 
 Expected output:
 ```
+-rw------- 1 root root   xx xxx xx xx:xx ash_vault_discord_alert_token
 -rw------- 1 root root   xx xxx xx xx:xx minio_root_user
 -rw------- 1 root root   xx xxx xx xx:xx minio_root_password
--rw------- 1 root root   xx xxx xx xx:xx discord_alert_token
 ```
 
 All secret files should show `-rw-------` (600) permissions.

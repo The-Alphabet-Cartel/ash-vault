@@ -13,9 +13,9 @@ MISSION - NEVER TO BE VIOLATED:
 ============================================================================
 Secrets Manager for Ash-Vault Backup Service
 ----------------------------------------------------------------------------
-FILE VERSION: v5.0-1-1.0-1
-LAST MODIFIED: 2026-01-09
-PHASE: Phase 1 - Foundation & Infrastructure
+FILE VERSION: v5.0-4-1.0-1
+LAST MODIFIED: 2026-01-17
+PHASE: Phase 4 - Alerting Integration
 CLEAN ARCHITECTURE: Compliant
 Repository: https://github.com/the-alphabet-cartel/ash-vault
 ============================================================================
@@ -31,11 +31,11 @@ DOCKER SECRETS LOCATIONS:
 - Development (Local): ./secrets/<secret_name>
 
 SUPPORTED SECRETS:
+- ash_vault_discord_alert_token: Discord webhook URL for Ash-Vault alerts
 - minio_root_user: MinIO admin username
 - minio_root_password: MinIO admin password
 - b2_key_id: Backblaze B2 application key ID
 - b2_application_key: Backblaze B2 application key
-- discord_alert_token: Discord webhook URL for system alerts
 """
 
 import logging
@@ -61,11 +61,11 @@ LOCAL_SECRETS_PATH = Path("secrets")
 
 # Known secret names and their descriptions
 KNOWN_SECRETS = {
-    "minio_root_user": "MinIO admin username",
-    "minio_root_password": "MinIO admin password",
-    "b2_key_id": "Backblaze B2 application key ID",
+    "ash_vault_discord_alert_token": "Discord webhook URL for Ash-Vault alerts",
     "b2_application_key": "Backblaze B2 application key",
-    "discord_alert_token": "Discord webhook URL for system alerts",
+    "b2_key_id": "Backblaze B2 application key ID",
+    "minio_root_password": "MinIO admin password",
+    "minio_root_user": "MinIO admin username",
 }
 
 # =============================================================================
@@ -296,17 +296,24 @@ class SecretsManager:
 
     def get_discord_alert_token(self) -> Optional[str]:
         """
-        Get Discord alert webhook URL.
+        Get Discord alert webhook token for Ash-Vault.
 
-        Also checks DISCORD_ALERT_TOKEN environment variable as fallback.
+        Uses the module-specific secret name `ash_vault_discord_alert_token`.
+        Also checks ASH_VAULT_DISCORD_ALERT_TOKEN environment variable as fallback.
 
         Returns:
-            Discord webhook URL or None
+            Discord alert webhook URL or None
         """
-        # Try our secrets system first
-        token = self.get("discord_alert_token")
+        # Try our secrets system first (new module-specific name)
+        token = self.get("ash_vault_discord_alert_token")
 
-        # Fallback to standard Discord env var
+        # Fallback to environment variable
+        if token is None:
+            token = os.environ.get("ASH_VAULT_DISCORD_ALERT_TOKEN")
+
+        # Legacy fallback (deprecated - will be removed)
+        if token is None:
+            token = self.get("discord_alert_token")
         if token is None:
             token = os.environ.get("DISCORD_ALERT_TOKEN")
 

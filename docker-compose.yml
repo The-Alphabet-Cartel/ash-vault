@@ -12,8 +12,8 @@
 # ============================================================================
 # Docker Compose Configuration - Complete Ash-Vault Stack
 # ----------------------------------------------------------------------------
-# FILE VERSION: v5.0-3-3.6-3
-# LAST MODIFIED: 2026-01-09
+# FILE VERSION: v5.0-4-1.0-1
+# LAST MODIFIED: 2026-01-17
 # PHASE: Phase 3 - Backup Infrastructure
 # CLEAN ARCHITECTURE: Compliant
 # Repository: https://github.com/the-alphabet-cartel/ash-vault
@@ -41,9 +41,9 @@
 #   docker compose down
 #
 # SECRETS (create in ./secrets/):
-#   - minio_root_user         - MinIO admin username
-#   - minio_root_password     - MinIO admin password
-#   - discord_alert_token     - Discord webhook URL (optional)
+#   - ash_vault_discord_alert_token - Discord webhook for Ash-Vault alerts
+#   - minio_root_user               - MinIO admin username
+#   - minio_root_password           - MinIO admin password
 #
 # REQUIREMENTS:
 #   - Docker Engine 24.0+
@@ -168,7 +168,7 @@ services:
       - "${VAULT_PORT:-30886}:${VAULT_PORT:-30886}"
 
     secrets:
-      - discord_alert_token
+      - ash_vault_discord_alert_token
 
     healthcheck:
       <<: *health
@@ -195,12 +195,12 @@ services:
 # Secrets
 # =============================================================================
 secrets:
+  ash_vault_discord_alert_token:
+    file: ./secrets/ash_vault_discord_alert_token
   minio_root_user:
     file: ./secrets/minio_root_user
   minio_root_password:
     file: ./secrets/minio_root_password
-  discord_alert_token:
-    file: ./secrets/discord_alert_token
 
 # =============================================================================
 # Volumes
