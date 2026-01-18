@@ -12,8 +12,8 @@
 # ============================================================================
 # Production Dockerfile - Backup Service
 # ----------------------------------------------------------------------------
-# FILE VERSION: v5.0-3-3.5a-1
-# LAST MODIFIED: 2026-01-09
+# FILE VERSION: v5.0-3-3.5a-2
+# LAST MODIFIED: 2026-01-18
 # PHASE: Phase 3 - Backup Infrastructure
 # Repository: https://github.com/the-alphabet-cartel/ash-vault
 # ============================================================================
@@ -82,10 +82,12 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     TZ=America/Los_Angeles
 
 # Install runtime dependencies
+# Note: zfsutils-linux required for ZFS snapshot/replication commands
 RUN apt-get update && apt-get install -y --no-install-recommends \
     curl \
     openssh-client \
     rclone \
+    zfsutils-linux \
     && rm -rf /var/lib/apt/lists/* \
     && apt-get clean
 
