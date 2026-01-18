@@ -13,8 +13,8 @@ MISSION - NEVER TO BE VIOLATED:
 ============================================================================
 Alert Manager - Discord Webhook Notifications
 ----------------------------------------------------------------------------
-FILE VERSION: v5.0-3-3.5a-1
-LAST MODIFIED: 2026-01-09
+FILE VERSION: v5.0-4-1.2-1
+LAST MODIFIED: 2026-01-18
 PHASE: Phase 3 - Backup Infrastructure
 CLEAN ARCHITECTURE: Compliant
 Repository: https://github.com/the-alphabet-cartel/ash-vault
@@ -67,9 +67,9 @@ class AlertManager:
     def _load_webhook_url(self) -> Optional[str]:
         """Load Discord webhook URL from Docker secret."""
         secret_paths = [
-            Path("/run/secrets/discord_alert_token"),
-            Path("/app/secrets/discord_alert_token"),
-            Path("secrets/discord_alert_token"),
+            Path("/run/secrets/ash_vault_discord_alert_token"),
+            Path("/app/secrets/ash_vault_discord_alert_token"),
+            Path("secrets/ash_vault_discord_alert_token"),
         ]
         
         for path in secret_paths:
