@@ -34,7 +34,7 @@
 # =============================================================================
 # Stage 1: Builder
 # =============================================================================
-FROM python:3.11-slim-bookworm AS builder
+FROM python:3.11-slim-trixie AS builder
 
 # Set build-time environment variables
 ENV PYTHONDONTWRITEBYTECODE=1 \
@@ -61,7 +61,7 @@ RUN pip install --upgrade pip && \
 # =============================================================================
 # Stage 2: Runtime
 # =============================================================================
-FROM python:3.11-slim-bookworm AS runtime
+FROM python:3.11-slim-trixie AS runtime
 
 # Labels
 LABEL org.opencontainers.image.title="Ash-Vault" \
@@ -82,8 +82,9 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     TZ=America/Los_Angeles
 
 # Install runtime dependencies
-# Note: zfsutils-linux required for ZFS snapshot/replication commands
-RUN apt-get update && apt-get install -y --no-install-recommends \
+# Note: zfsutils-linux is in contrib repo, must enable it first
+RUN echo "deb http://deb.debian.org/debian trixie contrib" >> /etc/apt/sources.list && \
+    apt-get update && apt-get install -y --no-install-recommends \
     curl \
     openssh-client \
     rclone \
