@@ -29,7 +29,7 @@ DESCRIPTION:
 USAGE:
     # Automatically invoked by Docker
     # Or manually: python docker-entrypoint.py [command]
-    
+
     # With custom PUID/PGID:
     PUID=1000 PGID=1000 python docker-entrypoint.py python main.py
 """
@@ -70,8 +70,10 @@ __version__ = "v5.0-4-1.0-1"
 # Charter v5.2 Colorized Logging
 # =============================================================================
 
+
 class Colors:
     """ANSI escape codes for Charter v5.2 compliant colorization."""
+
     RESET = "\033[0m"
     DIM = "\033[2m"
     BOLD = "\033[1m"
@@ -128,12 +130,12 @@ def print_startup_banner() -> None:
     banner = """
 ╔═══════════════════════════════════════════════════════════════════════════════════════╗
 ║                                                                                       ║
-║       █████╗ ███████╗██╗  ██╗     ██╗   ██╗ █████╗ ██╗   ██╗██╗  ████████╗       ║
-║      ██╔══██╗██╔════╝██║  ██║     ██║   ██║██╔══██╗██║   ██║██║  ╚══██╔══╝       ║
-║      ███████║███████╗███████║█████╗██║   ██║███████║██║   ██║██║     ██║          ║
-║      ██╔══██║╚════██║██╔══██║╚════╝╚██╗ ██╔╝██╔══██║██║   ██║██║     ██║          ║
-║      ██║  ██║███████║██║  ██║       ╚████╔╝ ██║  ██║╚██████╔╝███████╗██║          ║
-║      ╚═╝  ╚═╝╚══════╝╚═╝  ╚═╝        ╚═══╝  ╚═╝  ╚═╝ ╚═════╝ ╚══════╝╚═╝          ║
+║       █████╗ ███████╗██╗  ██╗        ██╗   ██╗ █████╗ ██╗   ██╗██╗  ████████╗         ║
+║      ██╔══██╗██╔════╝██║  ██║        ██║   ██║██╔══██╗██║   ██║██║  ╚══██╔══╝         ║
+║      ███████║███████╗███████║ █████╗ ██║   ██║███████║██║   ██║██║     ██║            ║
+║      ██╔══██║╚════██║██╔══██║ ╚════╝ ╚██╗ ██╔╝██╔══██║██║   ██║██║     ██║            ║
+║      ██║  ██║███████║██║  ██║         ╚████╔╝ ██║  ██║╚██████╔╝███████╗██║            ║
+║      ╚═╝  ╚═╝╚══════╝╚═╝  ╚═╝          ╚═══╝  ╚═╝  ╚═╝ ╚═════╝ ╚══════╝╚═╝            ║
 ║                                                                                       ║
 ║                       Crisis Archive & Backup Infrastructure v5.0                     ║
 ║                                                                                       ║
@@ -152,7 +154,9 @@ def print_header() -> None:
     border = "━" * 60
     if _USE_COLORS:
         print(f"\n{Colors.HEADER}{border}{Colors.RESET}")
-        print(f"{Colors.HEADER}  {COMPONENT_EMOJI} {COMPONENT_NAME.upper()} Container Entrypoint{Colors.RESET}")
+        print(
+            f"{Colors.HEADER}  {COMPONENT_EMOJI} {COMPONENT_NAME.upper()} Container Entrypoint{Colors.RESET}"
+        )
         print(f"{Colors.HEADER}{border}{Colors.RESET}\n")
     else:
         print(f"\n{border}")
@@ -163,6 +167,7 @@ def print_header() -> None:
 # =============================================================================
 # User/Group Management
 # =============================================================================
+
 
 def get_puid_pgid() -> Tuple[int, int]:
     """Get PUID and PGID from environment variables with validation."""
@@ -218,7 +223,7 @@ def get_group_gid(groupname: str) -> Optional[int]:
 def create_or_modify_group(groupname: str, gid: int) -> bool:
     """Create a group or modify existing group's GID."""
     current_gid = get_group_gid(groupname)
-    
+
     if current_gid is None:
         try:
             subprocess.run(
@@ -251,15 +256,18 @@ def create_or_modify_group(groupname: str, gid: int) -> bool:
 def create_or_modify_user(username: str, uid: int, gid: int) -> bool:
     """Create a user or modify existing user's UID/GID."""
     current_uid, current_gid = get_user_info(username)
-    
+
     if current_uid is None:
         try:
             subprocess.run(
                 [
                     "useradd",
-                    "--uid", str(uid),
-                    "--gid", str(gid),
-                    "--shell", "/bin/bash",
+                    "--uid",
+                    str(uid),
+                    "--gid",
+                    str(gid),
+                    "--shell",
+                    "/bin/bash",
                     "--create-home",
                     "--no-log-init",
                     username,
@@ -281,10 +289,14 @@ def create_or_modify_user(username: str, uid: int, gid: int) -> bool:
                     check=True,
                     capture_output=True,
                 )
-                log_info(f"Modified user '{username}': UID {current_uid}→{uid}, GID {current_gid}→{gid}")
+                log_info(
+                    f"Modified user '{username}': UID {current_uid}→{uid}, GID {current_gid}→{gid}"
+                )
                 return True
             except subprocess.CalledProcessError as e:
-                log_error(f"Failed to modify user: {e.stderr.decode() if e.stderr else e}")
+                log_error(
+                    f"Failed to modify user: {e.stderr.decode() if e.stderr else e}"
+                )
                 return False
         else:
             log_info(f"User '{username}' already has UID {uid}, GID {gid}")
@@ -295,22 +307,23 @@ def create_or_modify_user(username: str, uid: int, gid: int) -> bool:
 # Permission Management
 # =============================================================================
 
+
 def fix_ownership(uid: int, gid: int, directories: Optional[List[str]] = None) -> None:
     """Fix ownership of application directories."""
     dirs_to_fix = directories or WRITABLE_DIRECTORIES
-    
+
     if not dirs_to_fix:
         return
-    
+
     log_info("Fixing directory ownership...")
-    
+
     for dir_path in dirs_to_fix:
         path = Path(dir_path)
         try:
             if not path.exists():
                 path.mkdir(parents=True, exist_ok=True)
                 log_info(f"  Created: {dir_path}")
-            
+
             for item in path.rglob("*"):
                 try:
                     os.chown(item, uid, gid)
@@ -318,7 +331,7 @@ def fix_ownership(uid: int, gid: int, directories: Optional[List[str]] = None) -
                     pass
             os.chown(path, uid, gid)
             log_success(f"  ✓ {dir_path}")
-            
+
         except Exception as e:
             log_warning(f"  Could not fix {dir_path}: {e}")
 
@@ -327,24 +340,25 @@ def fix_ownership(uid: int, gid: int, directories: Optional[List[str]] = None) -
 # Privilege Management
 # =============================================================================
 
+
 def setup_user_and_permissions(puid: int, pgid: int) -> bool:
     """Main setup function - creates user/group and fixes permissions."""
     log_info(f"PUID: {puid}")
     log_info(f"PGID: {pgid}")
-    
+
     if not is_root():
         log_warning("Not running as root - skipping user/group setup")
         log_info(f"Running as UID={os.getuid()}, GID={os.getgid()}")
         return True
-    
+
     if not create_or_modify_group(APP_GROUP, pgid):
         return False
-    
+
     if not create_or_modify_user(APP_USER, puid, pgid):
         return False
-    
+
     fix_ownership(puid, pgid)
-    
+
     log_success("User and permissions configured")
     return True
 
@@ -353,24 +367,24 @@ def drop_privileges(puid: int, pgid: int) -> None:
     """Drop privileges from root to the specified user/group."""
     if not is_root():
         return
-    
+
     try:
         try:
             user_info = pwd.getpwnam(APP_USER)
             home_dir = user_info.pw_dir
         except KeyError:
             home_dir = str(APP_HOME)
-        
+
         os.environ["HOME"] = home_dir
         os.environ["USER"] = APP_USER
         os.environ["LOGNAME"] = APP_USER
-        
+
         os.setgroups([])
         os.setgid(pgid)
         os.setuid(puid)
-        
+
         log_success(f"Dropped privileges to UID={os.getuid()}, GID={os.getgid()}")
-        
+
     except Exception as e:
         log_error(f"Failed to drop privileges: {e}")
         raise
@@ -380,6 +394,7 @@ def drop_privileges(puid: int, pgid: int) -> None:
 # Application Execution
 # =============================================================================
 
+
 def execute_command(command: List[str]) -> None:
     """Execute the application command (replaces current process)."""
     log_info("Starting application...")
@@ -387,7 +402,7 @@ def execute_command(command: List[str]) -> None:
         print(f"{Colors.HEADER}{'━' * 60}{Colors.RESET}\n")
     else:
         print(f"{'━' * 60}\n")
-    
+
     os.execvp(command[0], command)
 
 
@@ -395,26 +410,27 @@ def execute_command(command: List[str]) -> None:
 # Main Entry Point
 # =============================================================================
 
+
 def main() -> int:
     """Main entrypoint function."""
     print_startup_banner()
     print_header()
-    
+
     puid, pgid = get_puid_pgid()
-    
+
     if not setup_user_and_permissions(puid, pgid):
         log_error("Failed to setup user - exiting")
         return 1
-    
+
     drop_privileges(puid, pgid)
-    
+
     if len(sys.argv) > 1:
         command = sys.argv[1:]
     else:
         command = DEFAULT_COMMAND
-    
+
     execute_command(command)
-    
+
     return 0
 
 
