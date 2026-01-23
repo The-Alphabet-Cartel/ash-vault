@@ -12,9 +12,9 @@
 # ============================================================================
 # Production Dockerfile - Backup Service
 # ----------------------------------------------------------------------------
-# FILE VERSION: v5.0-3-3.5a-2
-# LAST MODIFIED: 2026-01-18
-# PHASE: Phase 3 - Backup Infrastructure
+# FILE VERSION: v5.0-4-1.0-1
+# LAST MODIFIED: 2026-01-22
+# PHASE: Phase 4 - PUID/PGID Standardization
 # Repository: https://github.com/the-alphabet-cartel/ash-vault
 # ============================================================================
 #
@@ -28,6 +28,11 @@
 # MULTI-STAGE BUILD:
 #   Stage 1 (builder): Install dependencies
 #   Stage 2 (runtime): Minimal production image
+#
+# CLEAN ARCHITECTURE COMPLIANCE:
+#   - Uses python3.11 -m pip (Rule #10)
+#   - Pure Python entrypoint for PUID/PGID (Rule #13)
+#   - tini for PID 1 signal handling
 #
 # ============================================================================
 
@@ -63,6 +68,10 @@ RUN pip install --upgrade pip && \
 # =============================================================================
 FROM python:3.11-slim-trixie AS runtime
 
+# Default user/group IDs (can be overridden at runtime via PUID/PGID)
+ARG DEFAULT_UID=1000
+ARG DEFAULT_GID=1000
+
 # Labels
 LABEL org.opencontainers.image.title="Ash-Vault" \
       org.opencontainers.image.description="Crisis Archive & Backup Infrastructure" \
@@ -79,13 +88,17 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     # Application settings
     VAULT_ENVIRONMENT=production \
     VAULT_LOG_LEVEL=INFO \
-    TZ=America/Los_Angeles
+    TZ=America/Los_Angeles \
+    # Default PUID/PGID (LinuxServer.io style)
+    PUID=${DEFAULT_UID} \
+    PGID=${DEFAULT_GID}
 
 # Install runtime dependencies
 # Note: zfsutils-linux is in contrib repo, must enable it first
 RUN echo "deb http://deb.debian.org/debian trixie contrib" >> /etc/apt/sources.list && \
     apt-get update && apt-get install -y --no-install-recommends \
     curl \
+    tini \
     openssh-client \
     rclone \
     zfsutils-linux \
@@ -102,8 +115,21 @@ COPY --from=builder /opt/venv /opt/venv
 COPY main.py .
 COPY src/ ./src/
 
-# Create logs directory
-RUN mkdir -p /app/logs && chmod 755 /app/logs
+# Copy and set up entrypoint script (Rule #13: Pure Python PUID/PGID handling)
+COPY docker-entrypoint.py /app/docker-entrypoint.py
+RUN chmod +x /app/docker-entrypoint.py
+
+# Create default user/group (will be modified at runtime by entrypoint)
+RUN groupadd -g ${DEFAULT_GID} vault \
+    && useradd -m -u ${DEFAULT_UID} -g ${DEFAULT_GID} vault
+
+# Create logs directory (entrypoint will fix ownership at runtime)
+RUN mkdir -p /app/logs \
+    && chmod 755 /app/logs
+
+# NOTE: We do NOT switch to USER vault here!
+# The entrypoint script handles user switching at runtime after fixing permissions.
+# This allows PUID/PGID to work correctly with mounted volumes.
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \
@@ -112,5 +138,9 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \
 # Expose health endpoint port
 EXPOSE 30886
 
-# Run the backup service
+# Use tini as init system for proper signal handling
+# Then our Python entrypoint for PUID/PGID handling (Rule #13)
+ENTRYPOINT ["/usr/bin/tini", "--", "python", "/app/docker-entrypoint.py"]
+
+# Default command (passed to docker-entrypoint.py)
 CMD ["python", "main.py"]
