@@ -14,7 +14,7 @@ MISSION - NEVER TO BE VIOLATED:
 ============================================================================
 Docker Entrypoint with PUID/PGID Support
 ----------------------------------------------------------------------------
-FILE VERSION: v5.0-4-1.0-1
+FILE VERSION: v5.0-4-1.0-2
 LAST MODIFIED: 2026-01-22
 PHASE: Phase 4 - PUID/PGID Standardization
 CLEAN ARCHITECTURE: Rule #13 Compliant
@@ -121,6 +121,30 @@ def log_warning(message: str) -> None:
 
 def log_error(message: str) -> None:
     print(_format_log("ERROR", message, Colors.ERROR), file=sys.stderr, flush=True)
+
+
+def print_startup_banner() -> None:
+    """Print the ASCII art startup banner."""
+    banner = """
+╔═══════════════════════════════════════════════════════════════════════════════════════╗
+║                                                                                       ║
+║       █████╗ ███████╗██╗  ██╗     ██╗   ██╗ █████╗ ██╗   ██╗██╗  ████████╗       ║
+║      ██╔══██╗██╔════╝██║  ██║     ██║   ██║██╔══██╗██║   ██║██║  ╚══██╔══╝       ║
+║      ███████║███████╗███████║█████╗██║   ██║███████║██║   ██║██║     ██║          ║
+║      ██╔══██║╚════██║██╔══██║╚════╝╚██╗ ██╔╝██╔══██║██║   ██║██║     ██║          ║
+║      ██║  ██║███████║██║  ██║       ╚████╔╝ ██║  ██║╚██████╔╝███████╗██║          ║
+║      ╚═╝  ╚═╝╚══════╝╚═╝  ╚═╝        ╚═══╝  ╚═╝  ╚═╝ ╚═════╝ ╚══════╝╚═╝          ║
+║                                                                                       ║
+║                       Crisis Archive & Backup Infrastructure v5.0                     ║
+║                                                                                       ║
+║                   The Alphabet Cartel - https://discord.gg/alphabetcartel             ║
+║                                                                                       ║
+╚═══════════════════════════════════════════════════════════════════════════════════════╝
+"""
+    if _USE_COLORS:
+        print(f"{Colors.HEADER}{banner}{Colors.RESET}")
+    else:
+        print(banner)
 
 
 def print_header() -> None:
@@ -373,6 +397,7 @@ def execute_command(command: List[str]) -> None:
 
 def main() -> int:
     """Main entrypoint function."""
+    print_startup_banner()
     print_header()
     
     puid, pgid = get_puid_pgid()
