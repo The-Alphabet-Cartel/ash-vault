@@ -120,12 +120,13 @@ COPY docker-entrypoint.py /app/docker-entrypoint.py
 RUN chmod +x /app/docker-entrypoint.py
 
 # Create default user/group (will be modified at runtime by entrypoint)
-RUN groupadd -g ${DEFAULT_GID} vault \
-    && useradd -m -u ${DEFAULT_UID} -g ${DEFAULT_GID} vault
+RUN groupadd -g ${PGID} ash-vault \
+    && useradd -m -u ${PUID} -g ${PGID} ash-vault
 
 # Create logs directory (entrypoint will fix ownership at runtime)
 RUN mkdir -p /app/logs \
-    && chmod 755 /app/logs
+    && chmod 755 /app/logs \
+    && chown -R ${PUID}:${PGID} /app/logs
 
 # NOTE: We do NOT switch to USER vault here!
 # The entrypoint script handles user switching at runtime after fixing permissions.

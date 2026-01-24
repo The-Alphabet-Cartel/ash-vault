@@ -64,8 +64,7 @@ x-env: &env
   PGID: ${PGID:-1000}
   PUID: ${PUID:-1000}
   TZ: ${TZ:-America/Los_Angeles}
-  # Force ANSI colors in Docker logs (Charter v5.2 colorized logging)
-  FORCE_COLOR: "1"
+  FORCE_COLOR: ${FORCE_COLOR:-1}
 
 ### Healthchecks ###
 x-health: &health
@@ -189,9 +188,9 @@ services:
         condition: service_healthy
 
     labels:
-      - "org.alphabetcartel.service=ash-vault-backup"
-      - "org.alphabetcartel.version=5.0.3"
-      - "org.alphabetcartel.description=Ash-Vault Backup Automation Service"
+      - "net.alphabetcartel.service=ash-vault-backup"
+      - "net.alphabetcartel.version=5.0.3"
+      - "net.alphabetcartel.description=Ash-Vault Backup Automation Service"
 
 # =============================================================================
 # Secrets
