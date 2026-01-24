@@ -68,17 +68,18 @@ RUN pip install --upgrade pip && \
 # =============================================================================
 FROM python:3.11-slim-trixie AS runtime
 
+# Labels
+LABEL maintainer="PapaBearDoes <github.com/PapaBearDoes>"
+LABEL org.opencontainers.image.title="Ash-NLP"
+LABEL org.opencontainers.image.description="Crisis Archive & Backup Infrastructure"
+LABEL org.opencontainers.image.version="5.0.0"
+LABEL org.opencontainers.image.vendor="The Alphabet Cartel"
+LABEL org.opencontainers.image.url="https://github.com/the-alphabet-cartel/ash-nlp"
+LABEL org.opencontainers.image.source="https://github.com/the-alphabet-cartel/ash-nlp"
+
 # Default user/group IDs (can be overridden at runtime via PUID/PGID)
 ARG DEFAULT_UID=1000
 ARG DEFAULT_GID=1000
-
-# Labels
-LABEL org.opencontainers.image.title="Ash-Vault" \
-      org.opencontainers.image.description="Crisis Archive & Backup Infrastructure" \
-      org.opencontainers.image.version="5.0.3" \
-      org.opencontainers.image.vendor="The Alphabet Cartel" \
-      org.opencontainers.image.source="https://github.com/the-alphabet-cartel/ash-vault" \
-      org.opencontainers.image.licenses="MIT"
 
 # Set runtime environment variables
 ENV PYTHONDONTWRITEBYTECODE=1 \
