@@ -21,7 +21,7 @@
 # INSTALLATION:
 #   pip install -r requirements.txt
 #
-# NOTE: Use python3.11 -m pip for version-specific installation (Rule #12)
+# NOTE: Use python3.12 -m pip for version-specific installation (Rule #12)
 #
 # ============================================================================
 
