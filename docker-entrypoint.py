@@ -52,8 +52,8 @@ COMPONENT_EMOJI = "🔒"
 
 DEFAULT_UID = 1000
 DEFAULT_GID = 1000
-APP_USER = "vault"
-APP_GROUP = "vault"
+APP_USER = "ash-vault"
+APP_GROUP = "ash-vault"
 
 APP_HOME = Path("/app")
 
