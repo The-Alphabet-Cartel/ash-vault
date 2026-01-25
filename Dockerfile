@@ -84,7 +84,7 @@ ARG DEFAULT_GID=1000
 # Set runtime environment variables
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
-    PYTHONPATH=/app \
+    APP_HOME=/app \
     PATH="/opt/venv/bin:$PATH" \
     # Application settings
     VAULT_ENVIRONMENT=production \
@@ -107,7 +107,7 @@ RUN echo "deb http://deb.debian.org/debian trixie contrib" >> /etc/apt/sources.l
     && apt-get clean
 
 # Set working directory
-WORKDIR /app
+WORKDIR ${APP_HOME}
 
 # Copy virtual environment from builder
 COPY --from=builder /opt/venv /opt/venv
@@ -117,17 +117,17 @@ COPY main.py .
 COPY src/ ./src/
 
 # Copy and set up entrypoint script (Rule #13: Pure Python PUID/PGID handling)
-COPY docker-entrypoint.py /app/docker-entrypoint.py
-RUN chmod +x /app/docker-entrypoint.py
+COPY docker-entrypoint.py ${APP_HOME}/docker-entrypoint.py
+RUN chmod +x ${APP_HOME}/docker-entrypoint.py
 
 # Create default user/group (will be modified at runtime by entrypoint)
 RUN groupadd -g ${PGID} ash-vault \
     && useradd -m -u ${PUID} -g ${PGID} ash-vault
 
 # Create logs directory (entrypoint will fix ownership at runtime)
-RUN mkdir -p /app/logs \
-    && chmod 755 /app/logs \
-    && chown -R ${PUID}:${PGID} /app/logs
+RUN mkdir -p ${APP_HOME}/logs \
+    && chmod 755 ${APP_HOME}/logs \
+    && chown -R ${PUID}:${PGID} ${APP_HOME}/logs
 
 # NOTE: We do NOT switch to USER vault here!
 # The entrypoint script handles user switching at runtime after fixing permissions.
