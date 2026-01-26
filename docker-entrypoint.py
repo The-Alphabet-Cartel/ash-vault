@@ -22,7 +22,7 @@ Repository: https://github.com/the-alphabet-cartel/ash-vault
 ============================================================================
 
 DESCRIPTION:
-    LinuxServer.io-style entrypoint using pure Python (no bash scripting).
+    Entrypoint using pure Python (no bash scripting).
     Handles runtime PUID/PGID configuration for proper file permissions
     on mounted volumes.
 
