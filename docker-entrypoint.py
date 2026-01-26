@@ -12,10 +12,10 @@ MISSION - NEVER TO BE VIOLATED:
     Protect    → Safeguard our LGBTQIA+ community through vigilant data guardianship
 
 ============================================================================
-Docker Entrypoint with PUID/PGID Support
+Docker Entrypoint with PUID/PGID Support (Root-Required Mode)
 ----------------------------------------------------------------------------
-FILE VERSION: v5.0-4-1.0-2
-LAST MODIFIED: 2026-01-22
+FILE VERSION: v5.0-4-1.0-3
+LAST MODIFIED: 2026-01-26
 PHASE: Phase 4 - PUID/PGID Standardization
 CLEAN ARCHITECTURE: Rule #13 Compliant
 Repository: https://github.com/the-alphabet-cartel/ash-vault
@@ -23,15 +23,20 @@ Repository: https://github.com/the-alphabet-cartel/ash-vault
 
 DESCRIPTION:
     Entrypoint using pure Python (no bash scripting).
-    Handles runtime PUID/PGID configuration for proper file permissions
-    on mounted volumes.
+    
+    IMPORTANT: Ash-Vault requires ROOT privileges for:
+    - ZFS snapshot creation and management
+    - ZFS send/recv for replication to Lofn
+    - SSH access to remote servers as root
+    - Access to rclone configuration at /root/.config/rclone
+    
+    Unlike other Ash ecosystem components, Ash-Vault does NOT drop
+    privileges because backup operations fundamentally require root.
+    The REQUIRES_ROOT flag controls this behavior.
 
 USAGE:
     # Automatically invoked by Docker
     # Or manually: python docker-entrypoint.py [command]
-
-    # With custom PUID/PGID:
-    PUID=1000 PGID=1000 python docker-entrypoint.py python main.py
 """
 
 import grp
@@ -63,7 +68,17 @@ WRITABLE_DIRECTORIES = [
 
 DEFAULT_COMMAND = ["python", "main.py"]
 
-__version__ = "v5.0-4-1.0-1"
+# =============================================================================
+# ROOT REQUIREMENT FLAG
+# =============================================================================
+# Ash-Vault requires root privileges for ZFS and SSH operations.
+# Set to True to skip privilege dropping.
+# This is an intentional deviation from Rule #13 for backup services that
+# genuinely require elevated privileges.
+# =============================================================================
+REQUIRES_ROOT = True
+
+__version__ = "v5.0-4-1.0-3"
 
 
 # =============================================================================
@@ -419,11 +434,22 @@ def main() -> int:
 
     puid, pgid = get_puid_pgid()
 
-    if not setup_user_and_permissions(puid, pgid):
-        log_error("Failed to setup user - exiting")
-        return 1
-
-    drop_privileges(puid, pgid)
+    # Check if this component requires root privileges
+    if REQUIRES_ROOT:
+        log_warning("⚠️  REQUIRES_ROOT=True - Running as root (required for ZFS/SSH)")
+        log_info(f"   ZFS commands, SSH to Lofn, and rclone need root privileges")
+        log_info(f"   Configured PUID/PGID ({puid}/{pgid}) will be used for log ownership only")
+        
+        # Only fix ownership on writable directories, don't drop privileges
+        if is_root():
+            fix_ownership(puid, pgid)
+            log_success("Directory ownership configured for logs")
+    else:
+        # Standard PUID/PGID handling for non-privileged services
+        if not setup_user_and_permissions(puid, pgid):
+            log_error("Failed to setup user - exiting")
+            return 1
+        drop_privileges(puid, pgid)
 
     if len(sys.argv) > 1:
         command = sys.argv[1:]
