@@ -90,7 +90,7 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     VAULT_ENVIRONMENT=production \
     VAULT_LOG_LEVEL=INFO \
     TZ=America/Los_Angeles \
-    # Default PUID/PGID (LinuxServer.io style)
+    # Default PUID/PGID
     PUID=${DEFAULT_UID} \
     PGID=${DEFAULT_GID}
 
