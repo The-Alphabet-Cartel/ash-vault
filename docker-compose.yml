@@ -122,9 +122,9 @@ services:
         max-file: "3"
 
     labels:
-      - "org.alphabetcartel.service=ash-vault-minio"
-      - "org.alphabetcartel.version=5.0.3"
-      - "org.alphabetcartel.description=Ash-Vault MinIO Object Storage"
+      - "net.alphabetcartel.service=ash-vault-minio"
+      - "net.alphabetcartel.version=5.0.3"
+      - "net.alphabetcartel.description=Ash-Vault MinIO Object Storage"
 
   # ===========================================================================
   # Ash-Vault Backup Service
